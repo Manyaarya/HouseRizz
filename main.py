@@ -88,6 +88,15 @@ def extract_features_from_catalog_images(catalog_dir, model, preprocess, categor
     print("Features extracted for all catalog images in detected categories.")
     return catalog_features
 
+# Function to find similar items
+def find_similar_items(features, catalog_features, top_k=5):
+    similarities = []
+    for img_path, catalog_feature in catalog_features.items():
+        similarity = cosine_similarity(features.reshape(1, -1), catalog_feature.reshape(1, -1))[0][0]
+        similarities.append((img_path, similarity))
+    similarities.sort(key=lambda x: x[1], reverse=True)
+    return similarities[:top_k]
+
 
 
 
@@ -104,12 +113,23 @@ preprocess = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
+
 # Perform object detection and crop objects
-results = detect_and_crop_objects(yolo_model, "https://i.pinimg.com/564x/61/79/24/617924fd17bb27257e45e0cc47f72133.jpg")
+results, cropped_count, detected_categories = detect_and_crop_objects(yolo_model, "/Users/manya./repos/HouseRizz/617924fd17bb27257e45e0cc47f72133.jpg")
+print(f"Detected and cropped {cropped_count} objects in categories: {detected_categories}")
 
 # Extract features from cropped images
 feature_dict = extract_features_from_cropped_images('cropped_images', resnet_model, preprocess)
 print(f"Extracted features from cropped images: {len(feature_dict)}")
 
+# Extract features from catalog images in detected categories only
+catalog_features = extract_features_from_catalog_images('/Users/manya./PycharmProjects/Model/BaseSimilarityModel/images', resnet_model, preprocess, detected_categories)
+print(f"Extracted features from catalog images in categories: {detected_categories}")
 
+# Generate recommendations
+recommendations = generate_recommendations(feature_dict, catalog_features)
+print(f"Generated recommendations for {len(recommendations)} detected objects")
+
+# Display recommendations
+display_recommendations(recommendations, 'cropped_images', '/Users/manya./PycharmProjects/Model/BaseSimilarityModel/images')
 
