@@ -31,7 +31,7 @@ def extract_features(image_path, model, preprocess):
     return features.squeeze().numpy()
 
 # Function to perform object detection and save cropped images
-def detect_and_crop_objects(model, image_url, cropped_images_dir='cropped_images', conf=0.6):
+def detect_and_crop_objects(model, image_url, cropped_images_dir='cropped_images', conf=0.8):
     results = model(source=image_url, conf=conf)
     os.makedirs(cropped_images_dir, exist_ok=True)
 
@@ -44,6 +44,18 @@ def detect_and_crop_objects(model, image_url, cropped_images_dir='cropped_images
             cv2.imwrite(cropped_img_path, cropped_img)
             print(f"Cropped image saved to {cropped_img_path}")
     return results
+
+# Function to extract features from cropped images
+def extract_features_from_cropped_images(cropped_images_dir, model, preprocess):
+    feature_dict = {}
+    for img_path in os.listdir(cropped_images_dir):
+        full_img_path = os.path.join(cropped_images_dir, img_path)
+        if os.path.isfile(full_img_path): 
+            features = extract_features(full_img_path, model, preprocess)
+            feature_dict[img_path] = features
+    print("Features extracted for all cropped images.")
+    return feature_dict
+
 
 check_yolo_setup()
 yolo_model = initialize_yolo()
@@ -58,6 +70,10 @@ preprocess = transforms.Compose([
 
 # Perform object detection and crop objects
 results = detect_and_crop_objects(yolo_model, "https://i.pinimg.com/564x/63/06/6b/63066b20ad95c537334e9e4885bc07f2.jpg")
+
+# Extract features from cropped images
+feature_dict = extract_features_from_cropped_images('cropped_images', resnet_model, preprocess)
+print(f"Extracted features from cropped images: {len(feature_dict)}")
 
 
 
