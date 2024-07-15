@@ -32,4 +32,6 @@ def extract_features(image_path, model, preprocess):
 
 check_yolo_setup()
 yolo_model = initialize_yolo()
+resnet_model = models.resnet50(pretrained=True)
+
 
