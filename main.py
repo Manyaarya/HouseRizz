@@ -97,6 +97,14 @@ def find_similar_items(features, catalog_features, top_k=5):
     similarities.sort(key=lambda x: x[1], reverse=True)
     return similarities[:top_k]
 
+# Function to generate recommendations
+def generate_recommendations(feature_dict, catalog_features):
+    recommendations = {}
+    for img_name, features in feature_dict.items():
+        similar_items = find_similar_items(features, catalog_features)
+        recommendations[img_name] = similar_items
+    print("Recommendations generated.")
+    return recommendations
 
 
 
