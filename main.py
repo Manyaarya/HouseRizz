@@ -41,7 +41,7 @@ def clear_directory(directory):
                 os.rmdir(file_path)
 
 # Function to perform object detection and save cropped images
-def detect_and_crop_objects(model, image_url, cropped_images_dir='cropped_images', conf=0.8):
+def detect_and_crop_objects(model, image_url, cropped_images_dir='cropped_images', conf=0.6):
     clear_directory(cropped_images_dir)
     results = model(source=image_url, conf=conf)
     os.makedirs(cropped_images_dir, exist_ok=True)
@@ -145,7 +145,7 @@ preprocess = transforms.Compose([
 
 
 # Perform object detection and crop objects
-results, cropped_count, detected_categories = detect_and_crop_objects(yolo_model, "/Users/manya./repos/HouseRizz/617924fd17bb27257e45e0cc47f72133.jpg")
+results, cropped_count, detected_categories = detect_and_crop_objects(yolo_model, "https://i.pinimg.com/564x/ff/78/1e/ff781e962d1104d1208b83b493695b87.jpg")
 print(f"Detected and cropped {cropped_count} objects in categories: {detected_categories}")
 
 # Extract features from cropped images
