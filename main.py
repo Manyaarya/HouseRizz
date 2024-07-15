@@ -7,6 +7,13 @@ from PIL import Image # type: ignore
 from ultralytics import YOLO # type: ignore
 import matplotlib.pyplot as plt # type: ignore
 from sklearn.metrics.pairwise import cosine_similarity # type: ignore
+from fastapi import FastAPI, File, UploadFile
+from fastapi.responses import JSONResponse
+import uvicorn
+from PIL import Image
+import io
+
+
 
 # Function to check YOLO setup
 def check_yolo_setup():
@@ -143,23 +150,21 @@ preprocess = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
+app = FastAPI()
 
-# Perform object detection and crop objects
-results, cropped_count, detected_categories = detect_and_crop_objects(yolo_model, "https://i.pinimg.com/564x/ff/78/1e/ff781e962d1104d1208b83b493695b87.jpg")
-print(f"Detected and cropped {cropped_count} objects in categories: {detected_categories}")
+@app.post("/recommend")
+async def recommend(file: UploadFile = File(...)):
+    # Load the uploaded image
+    image_bytes = await file.read()
+    image = Image.open(io.BytesIO(image_bytes))
 
-# Extract features from cropped images
-feature_dict = extract_features_from_cropped_images('cropped_images', resnet_model, preprocess)
-print(f"Extracted features from cropped images: {len(feature_dict)}")
+    # Perform object detection and get recommendations
+    results, cropped_count, detected_categories = detect_and_crop_objects(yolo_model, image)
+    feature_dict = extract_features_from_cropped_images('cropped_images', resnet_model, preprocess)
+    catalog_features = extract_features_from_catalog_images('/path/to/catalog', resnet_model, preprocess, detected_categories)
+    recommendations = generate_recommendations(feature_dict, catalog_features)
 
-# Extract features from catalog images in detected categories only
-catalog_features = extract_features_from_catalog_images('/Users/manya./PycharmProjects/Model/BaseSimilarityModel/images', resnet_model, preprocess, detected_categories)
-print(f"Extracted features from catalog images in categories: {detected_categories}")
+    return JSONResponse(content=recommendations)
 
-# Generate recommendations
-recommendations = generate_recommendations(feature_dict, catalog_features)
-print(f"Generated recommendations for {len(recommendations)} detected objects")
-
-# Display recommendations
-display_recommendations(recommendations, 'cropped_images', '/Users/manya./PycharmProjects/Model/BaseSimilarityModel/images')
-
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)

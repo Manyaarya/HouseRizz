@@ -7,4 +7,6 @@ fastapi
 uvicorn
 numpy
 scikit-learn
-uvicorn
+requests
+pillow
+
