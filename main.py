@@ -30,6 +30,16 @@ def extract_features(image_path, model, preprocess):
 
     return features.squeeze().numpy()
 
+# Function to clear the cropped_images directory
+def clear_directory(directory):
+    if os.path.exists(directory):
+        for file in os.listdir(directory):
+            file_path = os.path.join(directory, file)
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                os.rmdir(file_path)
+
 # Function to perform object detection and save cropped images
 def detect_and_crop_objects(model, image_url, cropped_images_dir='cropped_images', conf=0.8):
     results = model(source=image_url, conf=conf)
@@ -56,6 +66,25 @@ def extract_features_from_cropped_images(cropped_images_dir, model, preprocess):
     print("Features extracted for all cropped images.")
     return feature_dict
 
+def extract_features_from_catalog_images(catalog_dir, model, preprocess):
+    catalog_features = {}
+    image_extensions = ['.jpg', '.jpeg', '.png', '.bmp', '.gif']
+
+    for category in os.listdir(catalog_dir):
+        category_path = os.path.join(catalog_dir, category)
+        if os.path.isdir(category_path):  # Ensure it's a directory
+            for img_path in os.listdir(category_path):
+                full_img_path = os.path.join(category_path, img_path)
+                if os.path.isfile(full_img_path) and os.path.splitext(full_img_path)[
+                    1].lower() in image_extensions:  # Ensure it's an image file
+                    features = extract_features(full_img_path, model, preprocess)
+                    catalog_features[f"{category}/{img_path}"] = features
+    print("Features extracted for all catalog images.")
+    return catalog_features
+
+
+
+
 
 check_yolo_setup()
 yolo_model = initialize_yolo()
@@ -69,7 +98,7 @@ preprocess = transforms.Compose([
 ])
 
 # Perform object detection and crop objects
-results = detect_and_crop_objects(yolo_model, "https://i.pinimg.com/564x/63/06/6b/63066b20ad95c537334e9e4885bc07f2.jpg")
+results = detect_and_crop_objects(yolo_model, "https://i.pinimg.com/564x/61/79/24/617924fd17bb27257e45e0cc47f72133.jpg")
 
 # Extract features from cropped images
 feature_dict = extract_features_from_cropped_images('cropped_images', resnet_model, preprocess)
