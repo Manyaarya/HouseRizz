@@ -106,6 +106,28 @@ def generate_recommendations(feature_dict, catalog_features):
     print("Recommendations generated.")
     return recommendations
 
+# Function to display recommendations
+def display_recommendations(recommendations, cropped_images_dir, catalog_dir):
+    for img_name, similar_items in recommendations.items():
+        cropped_img_path = os.path.join(cropped_images_dir, img_name)
+        cropped_img = Image.open(cropped_img_path)
+
+        plt.figure(figsize=(15, 5))
+
+        plt.subplot(1, len(similar_items) + 1, 1)
+        plt.imshow(cropped_img)
+        plt.title("Detected Object")
+        plt.axis('off')
+
+        for i, (item_img, similarity) in enumerate(similar_items, start=2):
+            item_img_path = os.path.join(catalog_dir, item_img)
+            item_img = Image.open(item_img_path)
+            plt.subplot(1, len(similar_items) + 1, i)
+            plt.imshow(item_img)
+            plt.title(f"Similar Item {i - 1}\nSimilarity: {similarity:.2f}")
+            plt.axis('off')
+
+        plt.show()
 
 
 
