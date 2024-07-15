@@ -8,3 +8,10 @@ from ultralytics import YOLO # type: ignore
 import matplotlib.pyplot as plt # type: ignore
 from sklearn.metrics.pairwise import cosine_similarity # type: ignore
 
+# Function to check YOLO setup
+def check_yolo_setup():
+    from IPython.display import display, Image as IPImage
+    import ultralytics
+    ultralytics.checks()
+    
+    
