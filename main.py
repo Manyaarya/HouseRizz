@@ -42,18 +42,24 @@ def clear_directory(directory):
 
 # Function to perform object detection and save cropped images
 def detect_and_crop_objects(model, image_url, cropped_images_dir='cropped_images', conf=0.8):
+    clear_directory(cropped_images_dir)
     results = model(source=image_url, conf=conf)
     os.makedirs(cropped_images_dir, exist_ok=True)
 
+    cropped_count = 0
+    detected_categories = set()
     for i, result in enumerate(results):
         img = result.orig_img
         for j, box in enumerate(result.boxes):
+            category = result.names[int(box.cls[0])]
+            detected_categories.add(category)
             x1, y1, x2, y2 = map(int, box.xyxy[0])
             cropped_img = img[y1:y2, x1:x2]
             cropped_img_path = os.path.join(cropped_images_dir, f"cropped_{i}_{j}.jpg")
             cv2.imwrite(cropped_img_path, cropped_img)
+            cropped_count += 1
             print(f"Cropped image saved to {cropped_img_path}")
-    return results
+    return results, cropped_count, detected_categories
 
 # Function to extract features from cropped images
 def extract_features_from_cropped_images(cropped_images_dir, model, preprocess):
