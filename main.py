@@ -66,27 +66,28 @@ def extract_features_from_cropped_images(cropped_images_dir, model, preprocess):
     feature_dict = {}
     for img_path in os.listdir(cropped_images_dir):
         full_img_path = os.path.join(cropped_images_dir, img_path)
-        if os.path.isfile(full_img_path): 
+        if os.path.isfile(full_img_path):  # Ensure it's a file
             features = extract_features(full_img_path, model, preprocess)
             feature_dict[img_path] = features
     print("Features extracted for all cropped images.")
     return feature_dict
 
-def extract_features_from_catalog_images(catalog_dir, model, preprocess):
+# Function to extract features from catalog images within specific categories
+def extract_features_from_catalog_images(catalog_dir, model, preprocess, categories):
     catalog_features = {}
     image_extensions = ['.jpg', '.jpeg', '.png', '.bmp', '.gif']
 
-    for category in os.listdir(catalog_dir):
+    for category in categories:
         category_path = os.path.join(catalog_dir, category)
         if os.path.isdir(category_path):  # Ensure it's a directory
             for img_path in os.listdir(category_path):
                 full_img_path = os.path.join(category_path, img_path)
-                if os.path.isfile(full_img_path) and os.path.splitext(full_img_path)[
-                    1].lower() in image_extensions:  # Ensure it's an image file
+                if os.path.isfile(full_img_path) and os.path.splitext(full_img_path)[1].lower() in image_extensions:  # Ensure it's an image file
                     features = extract_features(full_img_path, model, preprocess)
                     catalog_features[f"{category}/{img_path}"] = features
-    print("Features extracted for all catalog images.")
+    print("Features extracted for all catalog images in detected categories.")
     return catalog_features
+
 
 
 
