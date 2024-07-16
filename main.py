@@ -13,15 +13,6 @@ import uvicorn
 from PIL import Image
 import io
 
-
-
-# Function to check YOLO setup
-def check_yolo_setup():
-    from IPython.display import display, Image as IPImage
-    import ultralytics
-    ultralytics.checks()
-    print("Yolo setup is good to go!")
-
 # Function to initialize YOLO model
 def initialize_yolo(model_path='yolov8n.pt'):
     return YOLO(model_path)
@@ -66,6 +57,7 @@ def detect_and_crop_objects(model, image_url, cropped_images_dir='cropped_images
             cv2.imwrite(cropped_img_path, cropped_img)
             cropped_count += 1
             print(f"Cropped image saved to {cropped_img_path}")
+    print(f"Detected categories: {detected_categories}")
     return results, cropped_count, detected_categories
 
 # Function to extract features from cropped images
@@ -92,6 +84,7 @@ def extract_features_from_catalog_images(catalog_dir, model, preprocess, categor
                 if os.path.isfile(full_img_path) and os.path.splitext(full_img_path)[1].lower() in image_extensions:  # Ensure it's an image file
                     features = extract_features(full_img_path, model, preprocess)
                     catalog_features[f"{category}/{img_path}"] = features
+                    print(f"Features extracted for {category}/{img_path}")
     print("Features extracted for all catalog images in detected categories.")
     return catalog_features
 
@@ -139,7 +132,6 @@ def display_recommendations(recommendations, cropped_images_dir, catalog_dir):
 
 
 
-check_yolo_setup()
 yolo_model = initialize_yolo()
 resnet_model = models.resnet50(pretrained=True)
 resnet_model.eval()
@@ -161,7 +153,7 @@ async def recommend(file: UploadFile = File(...)):
     # Perform object detection and get recommendations
     results, cropped_count, detected_categories = detect_and_crop_objects(yolo_model, image)
     feature_dict = extract_features_from_cropped_images('cropped_images', resnet_model, preprocess)
-    catalog_features = extract_features_from_catalog_images('/path/to/catalog', resnet_model, preprocess, detected_categories)
+    catalog_features = extract_features_from_catalog_images('images', resnet_model, preprocess, detected_categories)
     recommendations = generate_recommendations(feature_dict, catalog_features)
 
     return JSONResponse(content=recommendations)
