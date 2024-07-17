@@ -159,4 +159,4 @@ async def recommend(file: UploadFile = File(...)):
     return JSONResponse(content=recommendations)
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
