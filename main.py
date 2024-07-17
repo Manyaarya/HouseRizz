@@ -144,6 +144,11 @@ preprocess = transforms.Compose([
 
 app = FastAPI()
 
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the Similarity API"}
+
+
 @app.post("/recommend")
 async def recommend(file: UploadFile = File(...)):
     # Load the uploaded image
