@@ -102,7 +102,7 @@ def generate_recommendations(feature_dict, catalog_features):
     recommendations = {}
     for img_name, features in feature_dict.items():
         similar_items = find_similar_items(features, catalog_features)
-        recommendations[img_name] = similar_items
+        recommendations[img_name] = [(item_img, float(similarity)) for item_img, similarity in similar_items]
     print("Recommendations generated.")
     return recommendations
 
