@@ -13,6 +13,8 @@ import uvicorn
 from PIL import Image
 import io
 
+
+
 # Function to initialize YOLO model
 def initialize_yolo(model_path='yolov8n.pt'):
     return YOLO(model_path)
@@ -39,7 +41,7 @@ def clear_directory(directory):
                 os.rmdir(file_path)
 
 # Function to perform object detection and save cropped images
-def detect_and_crop_objects(model, image_url, cropped_images_dir='cropped_images', conf=0.6):
+def detect_and_crop_objects(model, image_url, cropped_images_dir='cropped_images', conf=0.8):
     clear_directory(cropped_images_dir)
     results = model(source=image_url, conf=conf)
     os.makedirs(cropped_images_dir, exist_ok=True)
@@ -153,7 +155,7 @@ def read_root():
 async def recommend(file: UploadFile = File(...)):
     # Load the uploaded image
     image_bytes = await file.read()
-    image = Image.open(io.BytesIO(image_bytes))
+    image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
 
     # Perform object detection and get recommendations
     results, cropped_count, detected_categories = detect_and_crop_objects(yolo_model, image)

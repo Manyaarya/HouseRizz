@@ -9,4 +9,3 @@ numpy
 scikit-learn
 requests
 pillow
-
