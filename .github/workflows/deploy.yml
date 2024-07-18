@@ -1,4 +1,4 @@
-name: Build and deploy container app to Azure Web App - SimilarityImage
+name: Build and deploy container app to Azure Web App - SimilarityModelAI
 
 on:
   push:
@@ -42,7 +42,7 @@ jobs:
       id: deploy-to-webapp
       uses: azure/webapps-deploy@v2
       with:
-        app-name: 'SimilarityImage'
+        app-name: 'SimilarityModelAI'
         slot-name: 'production'
         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
         images: 'manyaarya/houserizz-app:latest'
