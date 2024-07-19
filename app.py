@@ -7,8 +7,8 @@ from PIL import Image # type: ignore
 from ultralytics import YOLO # type: ignore
 import matplotlib.pyplot as plt # type: ignore
 from sklearn.metrics.pairwise import cosine_similarity # type: ignore
-from fastapi import FastAPI, File, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, File, UploadFile # type: ignore
+from fastapi.responses import JSONResponse # type: ignore
 import uvicorn
 from PIL import Image
 import io
