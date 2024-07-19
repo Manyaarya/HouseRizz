@@ -12,9 +12,15 @@ from fastapi.responses import JSONResponse
 import uvicorn
 import io
 import requests
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 # GitHub repository details
-GITHUB_REPO = 'Manyaarya/Catalog'
+GITHUB_REPO = 'manyaarya/CatalogImages'
 GITHUB_BRANCH = 'main'
 GITHUB_API_URL = f'https://api.github.com/repos/{GITHUB_REPO}/contents/images?ref={GITHUB_BRANCH}'
 
@@ -43,7 +49,8 @@ def clear_directory(directory):
                 os.rmdir(file_path)
 
 # Function to perform object detection and save cropped images
-def detect_and_crop_objects(model, image, cropped_images_dir='cropped_images', conf=0.8):
+def detect_and_crop_objects(model, image, cropped_images_dir='cropped_images', conf=0.6):
+
     clear_directory(cropped_images_dir)
     results = model(source=image, conf=conf)
     os.makedirs(cropped_images_dir, exist_ok=True)
@@ -160,11 +167,14 @@ app = FastAPI()
 
 @app.get("/")
 def read_root():
+    logger.info("Root endpoint called")
     return {"message": "Welcome to the Similarity API"}
 
 @app.post("/recommend")
 async def recommend(file: UploadFile = File(...)):
+    logger.info("Recommend endpoint called")
     # Load the uploaded image
+
     image_bytes = await file.read()
     image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
 
@@ -174,16 +184,16 @@ async def recommend(file: UploadFile = File(...)):
 
     # Perform object detection and cropping
     cropped_count, detected_categories = detect_and_crop_objects(yolo_model, temp_image_path)
-    
+
     # Fetch catalog images from GitHub
     catalog_images = fetch_images_from_github()
-    
+
     # Extract features from catalog images within detected categories
     catalog_features = extract_features_from_catalog_images(catalog_images, resnet_model, preprocess, detected_categories)
-    
+
     # Extract features from cropped images
     feature_dict = extract_features_from_cropped_images("cropped_images", resnet_model, preprocess)
-    
+
     # Generate recommendations
     recommendations = generate_recommendations(feature_dict, catalog_features)
 
