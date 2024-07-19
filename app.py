@@ -1,16 +1,15 @@
 import os
-import cv2 # type: ignore
-import torch # type: ignore
-import torchvision.models as models # type: ignore
-import torchvision.transforms as transforms # type: ignore
-from PIL import Image # type: ignore
-from ultralytics import YOLO # type: ignore
-import matplotlib.pyplot as plt # type: ignore
-from sklearn.metrics.pairwise import cosine_similarity # type: ignore
-from fastapi import FastAPI, File, UploadFile # type: ignore
-from fastapi.responses import JSONResponse # type: ignore
-import uvicorn
+import cv2
+import torch
+import torchvision.models as models
+import torchvision.transforms as transforms
 from PIL import Image
+from ultralytics import YOLO
+import matplotlib.pyplot as plt
+from sklearn.metrics.pairwise import cosine_similarity
+from fastapi import FastAPI, File, UploadFile
+from fastapi.responses import JSONResponse
+import uvicorn
 import io
 import requests
 
@@ -24,8 +23,7 @@ def initialize_yolo(model_path='yolov8n.pt'):
     return YOLO(model_path)
 
 # Function to extract features using a pre-trained ResNet model
-def extract_features(image_path, model, preprocess):
-    image = Image.open(image_path).convert('RGB')
+def extract_features(image, model, preprocess):
     image = preprocess(image)
     image = image.unsqueeze(0)
 
@@ -45,9 +43,9 @@ def clear_directory(directory):
                 os.rmdir(file_path)
 
 # Function to perform object detection and save cropped images
-def detect_and_crop_objects(model, image_url, cropped_images_dir='cropped_images', conf=0.8):
+def detect_and_crop_objects(model, image, cropped_images_dir='cropped_images', conf=0.8):
     clear_directory(cropped_images_dir)
-    results = model(source=image_url, conf=conf)
+    results = model(source=image, conf=conf)
     os.makedirs(cropped_images_dir, exist_ok=True)
 
     cropped_count = 0
@@ -64,12 +62,12 @@ def detect_and_crop_objects(model, image_url, cropped_images_dir='cropped_images
             cropped_count += 1
             print(f"Cropped image saved to {cropped_img_path}")
     print(f"Detected categories: {detected_categories}")
-    return results, cropped_count, detected_categories
-
+    return cropped_count, detected_categories
 
 # Function to fetch images from GitHub
 def fetch_images_from_github(github_url=GITHUB_API_URL):
-    response = requests.get(github_url)
+    headers = {'Accept': 'application/vnd.github.v3+json'}
+    response = requests.get(github_url, headers=headers)
     if response.status_code == 200:
         contents = response.json()
         images = {}
@@ -89,26 +87,22 @@ def extract_features_from_cropped_images(cropped_images_dir, model, preprocess):
     feature_dict = {}
     for img_path in os.listdir(cropped_images_dir):
         full_img_path = os.path.join(cropped_images_dir, img_path)
-        if os.path.isfile(full_img_path):  # Ensure it's a file
-            features = extract_features(full_img_path, model, preprocess)
+        if os.path.isfile(full_img_path):
+            image = Image.open(full_img_path).convert('RGB')
+            features = extract_features(image, model, preprocess)
             feature_dict[img_path] = features
     print("Features extracted for all cropped images.")
     return feature_dict
 
 # Function to extract features from catalog images within specific categories
-def extract_features_from_catalog_images(catalog_dir, model, preprocess, categories):
+def extract_features_from_catalog_images(catalog_images, model, preprocess, categories):
     catalog_features = {}
-    image_extensions = ['.jpg', '.jpeg', '.png', '.bmp', '.gif']
-
     for category in categories:
-        category_path = os.path.join(catalog_dir, category)
-        if os.path.isdir(category_path):  # Ensure it's a directory
-            for img_path in os.listdir(category_path):
-                full_img_path = os.path.join(category_path, img_path)
-                if os.path.isfile(full_img_path) and os.path.splitext(full_img_path)[1].lower() in image_extensions:  # Ensure it's an image file
-                    features = extract_features(full_img_path, model, preprocess)
-                    catalog_features[f"{category}/{img_path}"] = features
-                    print(f"Features extracted for {category}/{img_path}")
+        for img_path, image in catalog_images.items():
+            if category in img_path:
+                features = extract_features(image, model, preprocess)
+                catalog_features[img_path] = features
+                print(f"Features extracted for {img_path}")
     print("Features extracted for all catalog images in detected categories.")
     return catalog_features
 
@@ -131,7 +125,7 @@ def generate_recommendations(feature_dict, catalog_features):
     return recommendations
 
 # Function to display recommendations
-def display_recommendations(recommendations, cropped_images_dir, catalog_dir):
+def display_recommendations(recommendations, cropped_images_dir, catalog_images):
     for img_name, similar_items in recommendations.items():
         cropped_img_path = os.path.join(cropped_images_dir, img_name)
         cropped_img = Image.open(cropped_img_path)
@@ -144,17 +138,13 @@ def display_recommendations(recommendations, cropped_images_dir, catalog_dir):
         plt.axis('off')
 
         for i, (item_img, similarity) in enumerate(similar_items, start=2):
-            item_img_path = os.path.join(catalog_dir, item_img)
-            item_img = Image.open(item_img_path)
+            item_image = catalog_images[item_img]
             plt.subplot(1, len(similar_items) + 1, i)
-            plt.imshow(item_img)
+            plt.imshow(item_image)
             plt.title(f"Similar Item {i - 1}\nSimilarity: {similarity:.2f}")
             plt.axis('off')
 
         plt.show()
-
-
-
 
 yolo_model = initialize_yolo()
 resnet_model = models.resnet50(pretrained=True)
@@ -172,17 +162,30 @@ app = FastAPI()
 def read_root():
     return {"message": "Welcome to the Similarity API"}
 
-
 @app.post("/recommend")
 async def recommend(file: UploadFile = File(...)):
     # Load the uploaded image
     image_bytes = await file.read()
     image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
 
-    cropped_images, detected_categories = detect_and_crop_objects(yolo_model, image)
+    # Save the uploaded image temporarily
+    temp_image_path = "temp_image.jpg"
+    image.save(temp_image_path)
+
+    # Perform object detection and cropping
+    cropped_count, detected_categories = detect_and_crop_objects(yolo_model, temp_image_path)
+    
+    # Fetch catalog images from GitHub
     catalog_images = fetch_images_from_github()
+    
+    # Extract features from catalog images within detected categories
     catalog_features = extract_features_from_catalog_images(catalog_images, resnet_model, preprocess, detected_categories)
-    recommendations = generate_recommendations(cropped_images, catalog_features)
+    
+    # Extract features from cropped images
+    feature_dict = extract_features_from_cropped_images("cropped_images", resnet_model, preprocess)
+    
+    # Generate recommendations
+    recommendations = generate_recommendations(feature_dict, catalog_features)
 
     return JSONResponse(content=recommendations)
 
