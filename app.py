@@ -12,8 +12,12 @@ from fastapi.responses import JSONResponse # type: ignore
 import uvicorn
 from PIL import Image
 import io
+import requests
 
-
+# GitHub repository details
+GITHUB_REPO = 'Manyaarya/Catalog'
+GITHUB_BRANCH = 'main'
+GITHUB_API_URL = f'https://api.github.com/repos/{GITHUB_REPO}/contents/images?ref={GITHUB_BRANCH}'
 
 # Function to initialize YOLO model
 def initialize_yolo(model_path='yolov8n.pt'):
@@ -61,6 +65,24 @@ def detect_and_crop_objects(model, image_url, cropped_images_dir='cropped_images
             print(f"Cropped image saved to {cropped_img_path}")
     print(f"Detected categories: {detected_categories}")
     return results, cropped_count, detected_categories
+
+
+# Function to fetch images from GitHub
+def fetch_images_from_github(github_url=GITHUB_API_URL):
+    response = requests.get(github_url)
+    if response.status_code == 200:
+        contents = response.json()
+        images = {}
+        for item in contents:
+            if item['type'] == 'dir':
+                images.update(fetch_images_from_github(github_url=item['url']))
+            elif item['type'] == 'file' and item['download_url']:
+                img_data = requests.get(item['download_url']).content
+                images[item['path']] = Image.open(io.BytesIO(img_data)).convert('RGB')
+        return images
+    else:
+        print(f"Failed to fetch from GitHub: {response.status_code} {response.text}")
+        return {}
 
 # Function to extract features from cropped images
 def extract_features_from_cropped_images(cropped_images_dir, model, preprocess):
@@ -157,11 +179,10 @@ async def recommend(file: UploadFile = File(...)):
     image_bytes = await file.read()
     image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
 
-    # Perform object detection and get recommendations
-    results, cropped_count, detected_categories = detect_and_crop_objects(yolo_model, image)
-    feature_dict = extract_features_from_cropped_images('cropped_images', resnet_model, preprocess)
-    catalog_features = extract_features_from_catalog_images('images', resnet_model, preprocess, detected_categories)
-    recommendations = generate_recommendations(feature_dict, catalog_features)
+    cropped_images, detected_categories = detect_and_crop_objects(yolo_model, image)
+    catalog_images = fetch_images_from_github()
+    catalog_features = extract_features_from_catalog_images(catalog_images, resnet_model, preprocess, detected_categories)
+    recommendations = generate_recommendations(cropped_images, catalog_features)
 
     return JSONResponse(content=recommendations)
 
