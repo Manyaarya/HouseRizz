@@ -1,4 +1,3 @@
-# Use an official Python runtime as a parent image
 FROM --platform=linux/arm64 python:3.11-slim
 
 # Set the working directory in the container
@@ -17,6 +16,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Expose port 8000 to the outside world
 EXPOSE 8000
+
+# Define environment variable
+ENV NAME World
 
 # Run the FastAPI application with Uvicorn
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
