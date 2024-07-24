@@ -39,3 +39,7 @@ jobs:
           app-name: alml
           images: almlcontainer.azurecr.io/my-fast-api:latest
           slot-name: 'production'
+          azure-subscription: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          service-principal-id: ${{ secrets.AZURE_CLIENT_ID }}
+          service-principal-key: ${{ secrets.AZURE_CLIENT_SECRET }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}

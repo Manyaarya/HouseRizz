@@ -123,7 +123,7 @@ def generate_recommendations(feature_dict, catalog_features):
 
 # Initialize models and preprocess
 yolo_model = initialize_yolo()
-resnet_model = models.resnet50(pretrained=True)
+resnet_model = models.resnet50(weights=True)
 resnet_model.eval()
 preprocess = transforms.Compose([
     transforms.Resize(256),
