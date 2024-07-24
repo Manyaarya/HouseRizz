@@ -33,13 +33,14 @@ jobs:
     needs: build-and-push
 
     steps:
+      - name: 'Login to Azure'
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v2
         with:
           app-name: alml
           images: almlcontainer.azurecr.io/my-fast-api:latest
           slot-name: 'production'
-          azure-subscription: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          service-principal-id: ${{ secrets.AZURE_CLIENT_ID }}
-          service-principal-key: ${{ secrets.AZURE_CLIENT_SECRET }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
