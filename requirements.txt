@@ -9,3 +9,7 @@ numpy
 scikit-learn
 requests
 PyGithub
+pyodbc
+sqlalchemy
+azure-storage-blob
+python-multipart
